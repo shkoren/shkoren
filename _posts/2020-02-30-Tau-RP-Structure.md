@@ -8,9 +8,7 @@ output:
 indent: no
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+
 
 ## Introduction
 This code demonstrates the relationship between human ribosomal protein (RP) position within the ribosome and association with the microtubule associated protein (MAP) tau. Recent studies have illustrated the role of tau in (dys)regulating RNA metabolism and protein synthesis (Koren et al., 2020), but little is known about why and how tau associates with RPs. To evaluate one potential guiding principle for tau associating with RPs, we can evaluate the structural position (internal or external) of any specific RP by the Interface Index ($II$). The $II$ measures the number of amino acids (AA) an RP interfaces water and rRNA, suggesting an internal and external position, respectively (Natchiar et al., 2017, Shigeoka et al., 2019).
@@ -23,54 +21,13 @@ We can couple the $II$ of any specific RP to its association with tau based on i
 ## Most RPs are external, but a defined core of internal RPs exist.
 Internal RP proteins have more AA interfacing with rRNA than water resulting in a higher Interface Index. A common cutoff for RP structural position is 0.60 (Shigeoka et al., 2019). Plotting for the relative frequency of RP interface indices (**Fig. 1**) reveals most RPs are external rather than internal, but roughly 20% of RPs reside internally.
 <p align="center">
-```{r echo=FALSE, warning = FALSE, error = FALSE, message=FALSE, fig.align = 'center'}
-#Initializing data and packages
-library(ggplot2)
-library(dplyr)
-library(ggstatsplot)
-library(cowplot)
-setwd("D:/GitHub/Comp-bio-projects/Tau-Ribosome Association")
-options(scipen = 999) #Turn off sci-notation
-
-rpf = 'RP.full.csv'
-rp.full = as.data.frame(read.csv(rpf, as.is=TRUE,header=TRUE,sep=',', check.names=FALSE, fileEncoding="UTF-8-BOM"))
-colnames(rp.full)[1] = 'Symbol'
-
-p1 = ggplot(data = rp.full) + geom_histogram(aes(x = Interface, y = stat(count) / sum(count)), binwidth = .05) + xlab("Interface Index of RPs") + ggtitle("Figure 1: Relative frequency of human RP Interface Index") +
-  ylab("Relative Frequency (%)") + geom_vline(xintercept = 0.60, color = "red", linetype = "dashed", size = 2) + scale_x_continuous(limits = c(0, 1)) +
-  scale_y_continuous(limits = c(0, .15))
-
-p1
-```
+<img src="/figs/Tau-RP-Structure/unnamed-chunk-1-1.png" title="testing" alt="testing" style="display: block; margin: auto;" />
 </p>
 ## Tau interactome data from human brain shows high RP association
 
 The most robust investigation of the tau interactome was recently published (Hsieh et al., 2019). This study used label free quantification mass spectrometry (LFQ MS) to investigate the tau interactome when immunoprecipitated from human postmortem brain tissue. Similar to other studies in models of tauopathy, Hsieh et al noted that tau associates with many RP and translational proteins and AD disease status correlates with an enhanced tau-RP association (**Fig. 2**). Notably, however, not all RPs were found due to limitations in MS depth, precluding analysis on roughly half of all RPs.
 <p align="center">
-```{r echo=FALSE, warning = FALSE, error = FALSE, message=FALSE, fig.align = 'center'}
-setwd("D:/GitHub/Comp-bio-projects/Tau-Ribosome Association")
-
-h19f = "Hsieh2019.csv"
-h19 = as.data.frame(read.csv(h19f, as.is=TRUE,header=TRUE,sep=',', check.names=FALSE, fileEncoding="UTF-8-BOM"))
-#h19 = as.data.frame(read.csv("D:/GitHub/Comp-bio-projects/Tau-Ribosome Association/Hsieh2019.csv", as.is=TRUE,header=TRUE,sep=',', check.names=FALSE, fileEncoding="UTF-8-BOM"))
-h19[is.na(h19)] <- "Other"
-h19$Translation[h19$Translation == "TRUE"] = "Translational / Ribosomal"
-
-p2 = ggstatsplot::ggbetweenstats(
-  data = h19,
-  x = Translation,
-  y = AD.CT.FC,
-  notch = TRUE,
-  mean.ci = FALSE,
-  outlier.tagging = FALSE,
-  xlab = "Protein Class",
-  ylab = "Tau-IP Intensity AD-CT (log2 FC)",
-  title = "Figure 2: Tau Association with Translational Proteins in human AD brain",
-  bf.message = FALSE,
-  results.subtitle = FALSE,
-) 
-p2 + geom_hline(yintercept = 0, color = "red", linetype = "dashed", size = 1)
-```
+<img src="/figs/Tau-RP-Structure/unnamed-chunk-2-1.png" title="testing" alt="testing" style="display: block; margin: auto;" />
 </p>
 ## RP association with tau is unrelated to position within the ribosome
 
@@ -85,141 +42,42 @@ Ribosomes function as molecular motors, coordinating over 100 different proteins
 If **(1)** is true, then tau would associate with mostly nuclear RPs and not favor any internal or external RP. If **(2)** is true, tau would likely favor nascent RPs, inhibiting translation of RPs would diminish at least part of tau-RP associations and not be bias to structural position in the ribosome. If **(3)** is true, tau-RP association would not require RNA based on known examples of extra-ribosomal RP function and similarly not be bias to RP position. If **(4)** is true, RP position would not correlate with tau association.
 
 More simply, RPs most often reside within the ribosome. Internal RPs have less AA available for surface association of tau, suggesting that tau might favor association with external RPs. To assess whether there is a tendency for tau to bind to RPs based on their structural position within the ribosome, the two sample Kolmogorov-Smirnov (two-sample K-S) test can be used to determine whether two distributions are independent of one another. Since a common cutoff for internal RPs is an Interface Index of 0.60, we can separate RPs based on that statistic. The two-sample K-S test can then be used to test whether the tau association of RPs is independent of their structural position in the ribosome:
-```{r echo=FALSE, warning = FALSE, error = FALSE, message=FALSE}
-setwd("D:/GitHub/Comp-bio-projects/Tau-Ribosome Association")
 
-ff = 'RP.Tau.csv'
-rp = as.data.frame(read.csv(ff, as.is=TRUE,header=TRUE,sep=',', check.names=FALSE, fileEncoding = "UTF-8-BOM"))
-
-rp.filt.in = rp %>% filter(Interface > .6)
-rp.filt.ex = rp %>% filter(Interface < .6)
-ks.test(rp.filt.in$CTmean, rp.filt.ex$CTmean)
-```
+{% highlight text %}
+## 
+## 	Two-sample Kolmogorov-Smirnov test
+## 
+## data:  rp.filt.in$CTmean and rp.filt.ex$CTmean
+## D = 0.38235, p-value = 0.2952
+## alternative hypothesis: two-sided
+{% endhighlight %}
 
 Since the *p* value of the two-sample K-S test > 0.05, tau-RP association grouped based on their ribosomal structural position (external, $II < 0.60$ and internal, $II > 0.60$) are not independent. This suggests that tau associates with RPs regardless of their position in ribosomes, at least in this basal state of control, non-demented patient brain samples (**Fig. 3A**). RP Interface Index and tau association can be further plotted for AD brain samples (**Fig. 3B**) and the change in tau-RP association from control (CT) to AD brain (**Fig. 3C**).
 
 First, the two-sample K-S test for tau-RP in AD:
-```{r echo=FALSE, warning = FALSE, error = FALSE, message=FALSE,  fig.align = 'center'}
-ks.test(rp.filt.in$ADmean, rp.filt.ex$ADmean)
-```
+
+{% highlight text %}
+## 
+## 	Two-sample Kolmogorov-Smirnov test
+## 
+## data:  rp.filt.in$ADmean and rp.filt.ex$ADmean
+## D = 0.32353, p-value = 0.5778
+## alternative hypothesis: two-sided
+{% endhighlight %}
 
 Next, the two-sample K-S test for tau-RP for the fold change in association between AD and CT samples:
-```{r echo=FALSE, warning = FALSE, error = FALSE, message=FALSE,  fig.align = 'center'}
-ks.test(rp.filt.in$AD.CT.FC, rp.filt.ex$AD.CT.FC)
-```
+
+{% highlight text %}
+## 
+## 	Two-sample Kolmogorov-Smirnov test
+## 
+## data:  rp.filt.in$AD.CT.FC and rp.filt.ex$AD.CT.FC
+## D = 0.38235, p-value = 0.2952
+## alternative hypothesis: two-sided
+{% endhighlight %}
 Both two-sample K-S tests reveal no significant difference between the 0.60 $II$ cutoff between internal and external RPs. This minimal association is more easily interpreted when plotted:
 <p align="center">
-```{r echo=FALSE, warning = FALSE, error = FALSE, message=FALSE,  fig.align = 'center'}
-title = ggdraw() +
-  draw_label(
-    "Figure 3: RP Interface Index and tau association in CT and AD brain",
-    fontface = 'bold',
-    x = 0,
-    hjust = 0
-  ) +
-  theme(
-    # add margin on the left of the drawing canvas,
-    # so title is aligned with left edge of first plot
-    plot.margin = margin(0, 0, 0, 7)
-  )
-
-p3a = ggstatsplot::ggscatterstats(
-  data = rp,
-  x = Interface,
-  y = CTmean,
-  type = "np",
-  xlab = "RP Interface Index",
-  ylab = "Tau-IP Intensity in Control brain",
-  label.var = Symbol,
-  label.expression = (Symbol == "RPS7" | Symbol == "RPL29"),
-  results.subtitle = FALSE,
-  subtitle = bquote("p = 0.180, Spearman" ~ rho ~ "= -0.21"),
-  marginal = FALSE,
-  conf.level = 0,
-  title = "Control brain",
-  #caption = "RP interface data from Natchiar et al., 2017, Shigeoka et al., 2019\nTau-IP data from Hsieh et al., 2019",
-  bf.message = FALSE,
-  centrality.parameter = "none"
-)
-p3a = p3a + geom_vline(xintercept = 0.60, color = "red", linetype = "dashed", size = 1)
-
-p3b = ggstatsplot::ggscatterstats(
-  data = rp,
-  x = Interface,
-  y = ADmean,
-  type = "np",
-  xlab = "RP Interface Index",
-  ylab = "Tau-IP Intensity in AD",
-  label.var = Symbol,
-  label.expression = (Symbol == "RPS7" | Symbol == "RPL29"),
-  results.subtitle = FALSE,
-  subtitle = bquote("p = 0.750, Spearman" ~ rho ~"= 0.05"),
-  marginal = FALSE,
-  conf.level = 0,
-  title = "AD Brain",
-  bf.message = FALSE,
-  centrality.parameter = "none"
-)
-p3b = p3b + geom_vline(xintercept = 0.60, color = "red", linetype = "dashed", size = 1)
-
-p3c = ggstatsplot::ggscatterstats(
-  data = rp,
-  x = Interface,
-  y = AD.CT.FC,
-  type = "np",
-  xlab = "RP Interface Index",
-  ylab = "Tau-IP Intensity AD-CT (log2 FC)",
-  label.var = Symbol,
-  label.expression = (Symbol == "RPS7" | Symbol == "RPL29"),
-  results.subtitle = FALSE,
-  subtitle = bquote("p = 0.538, Spearman" ~ rho ~ " = 0.10"),
-  marginal = FALSE,
-  conf.level = 0,
-  title = "AD-CT Fold Change",
-  bf.message = FALSE,
-  centrality.parameter = "none"
-)
-p3c = p3c + 
-  geom_vline(xintercept = 0.60, color = "red", linetype = "dashed", size = 1)
-
-pn3a = plot_grid(
-  p3a, NULL,
-  labels = c("A", ""),
-  nrow = 1,
-  ncol = 2,
-  rel_widths = c(2, 0.05)
-)
-
-pn3b = plot_grid(
-  p3b, NULL,
-  labels = c("B", ""),
-  nrow = 1,
-  ncol = 2,
-  rel_widths = c(2, 0.05)
-)
-
-pn3c = plot_grid(
-  p3c, NULL,
-  labels = c("C", ""),
-  nrow = 1,
-  ncol = 2,
-  rel_widths = c(2, 0.05)
-)
-
-plot_row = plot_grid(
-  pn3a, pn3b, pn3c,
-  axis = tblr,
-  nrow = 1,
-  ncol = 3,
-  
-  rel_widths = c(2, 2, 2))
-
-plot_grid(
-  title, plot_row,
-  ncol = 1, 
-  rel_heights = c(0.12, 2)
-)
-```
+<img src="/figs/Tau-RP-Structure/unnamed-chunk-6-1.png" title="testing" alt="testing" style="display: block; margin: auto;" />
 </p>
 However, the two-sample K-S test is only as robust as the distinction between groups. In this biological case, the 0.60 $II$ cutoff might not be a strong divider. Instead, the distribution of RP $II$ to tau-RP association can be linearly regressed and tested by non-parametric Spearman's test for a significant linear correlation. Overall, CT, AD, and AD-CT fold change of tau-RP association do not significantly associate with RP structural position within the ribosome. 
 
