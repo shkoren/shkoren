@@ -31,10 +31,10 @@ The most robust investigation of the tau interactome was recently published (Hsi
 </p>
 ## RP association with tau is unrelated to position within the ribosome
 
-Ribosomes function as molecular motors, coordinating over 100 different proteins to translate RNA at roughly 3 AA/ms. Ribosomes canonically form in the nucleolus, where rRNA and RPs associate together to form their overall quaternary structure. Ribosomes localize ubiquitously in neurons, ranging from distal dendrites to soma to axons. Over continued use throughout the neuronal lifespan, damaged or misfolded RPs require replacement by younger, undamaged variants of that RP to prevent aberrant ribosomal function. This on-site ribosome remodeling program has exciting and broad physiological implications, but remains poorly understood. Considering the depth of tau-RP association, four main hypotheses form:\
-1. Tau associates with nucleolar RPs during ribosomal biogenesis, involving RPs prior to and following their overall position within the ribosome\
-2. Tau associates with locally-synthesized RPs during the on-site remodeling program and RPs already positioned within the ribosome\
-3. Tau associates with extra-ribosomal RPs functioning outside of ribosomes\
+Ribosomes function as molecular motors, coordinating over 100 different proteins to translate RNA at roughly 3 AA/ms. Ribosomes canonically form in the nucleolus, where rRNA and RPs associate together to form their overall quaternary structure. Ribosomes localize ubiquitously in neurons, ranging from distal dendrites to soma to axons. Over continued use throughout the neuronal lifespan, damaged or misfolded RPs require replacement by younger, undamaged variants of that RP to prevent aberrant ribosomal function. This on-site ribosome remodeling program has exciting and broad physiological implications, but remains poorly understood. Considering the depth of tau-RP association, four main hypotheses form:
+1. Tau associates with nucleolar RPs during ribosomal biogenesis, involving RPs prior to and following their overall position within the ribosome
+2. Tau associates with locally-synthesized RPs during the on-site remodeling program and RPs already positioned within the ribosome
+3. Tau associates with extra-ribosomal RPs functioning outside of ribosomes
 4. Tau associated with RPs regardless of their localization, function, age, etc.
 
 *Note: Much of ribosomal regulation and proteostasis remains unknown, so these hypotheses are purely speculative and probably oversimplistic. Additionally, tau is known to associate with rRNA and tRNA, complicating this working model.*
