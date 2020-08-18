@@ -89,9 +89,9 @@ Ribosome metabolism provides surprising levels of post-transcriptional regulatio
 
 ## References:
 
-1. Hsieh, Y.-C. et al. Tau-Mediated Disruption of the Spliceosome Triggers Cryptic RNA Splicing and Neurodegeneration in Alzheimer’s Disease. Cell Rep 29, 301-316.e10 (2019).\
-2. Koren, S. A., Galvis-Escobar, S. & Abisambra, J. F. Tau-mediated dysregulation of RNA: Evidence for a common molecular mechanism of toxicity in frontotemporal dementia and other tauopathies. Neurobiol. Dis. 141, 104939 (2020).\
-3. Natchiar, S. K., Myasnikov, A. G., Kratzat, H., Hazemann, I. & Klaholz, B. P. Visualization of chemical modifications in the human 80S ribosome structure. Nature 551, 472–477 (2017).\
+1. Hsieh, Y.-C. et al. Tau-Mediated Disruption of the Spliceosome Triggers Cryptic RNA Splicing and Neurodegeneration in Alzheimer’s Disease. Cell Rep 29, 301-316.e10 (2019).
+2. Koren, S. A., Galvis-Escobar, S. & Abisambra, J. F. Tau-mediated dysregulation of RNA: Evidence for a common molecular mechanism of toxicity in frontotemporal dementia and other tauopathies. Neurobiol. Dis. 141, 104939 (2020).
+3. Natchiar, S. K., Myasnikov, A. G., Kratzat, H., Hazemann, I. & Klaholz, B. P. Visualization of chemical modifications in the human 80S ribosome structure. Nature 551, 472–477 (2017).
 4. Shigeoka, T. et al. On-Site Ribosome Remodeling by Locally Synthesized Ribosomal Proteins in Axons. Cell Rep 29, 3605-3619.e10 (2019).
 
 
