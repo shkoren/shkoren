@@ -12,11 +12,9 @@ author: Shon A Koren
 # --- List of links in the navigation bar --- #
 
 navbar-links:
-  Projects: ""
   About Me: "aboutme"
   Presentations:
     - Learn markdown: "https://www.markdowntutorial.com/"
-   Contact: ""
 
 # --- Logo --- #
 
