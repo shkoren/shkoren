@@ -14,7 +14,7 @@ indent: no
 This code demonstrates the relationship between human ribosomal protein (RP) position within the ribosome and association with the microtubule associated protein (MAP) tau. Recent studies have illustrated the role of tau in (dys)regulating RNA metabolism and protein synthesis (Koren et al., 2020), but little is known about why and how tau associates with RPs. To evaluate one potential guiding principle for tau associating with RPs, we can evaluate the structural position (internal or external) of any specific RP by the Interface Index ($II$). The $II$ measures the number of amino acids (AA) an RP interfaces water and rRNA, suggesting an internal and external position, respectively (Natchiar et al., 2017, Shigeoka et al., 2019).
 
 <p align="center">
-$$InterfaceIndex = \displaystyle \frac{{\sum AA}_{rRNA}}{\sum(AA_{rRNA}+AA_{water})}$$
+$$InterfaceIndex = \displaystyle \frac{ {\sum AA}_{rRNA} } {\sum(AA_{rRNA}+AA_{water} ) }$$
 </p>
 We can couple the $II$ of any specific RP to its association with tau based on immunoprecipitation-coupled mass spectrometry (IP-MS) studies in the human brain to evaluate any potential bias of association.
 
