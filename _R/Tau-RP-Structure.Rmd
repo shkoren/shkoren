@@ -109,7 +109,7 @@ ks.test(rp.filt.in$AD.CT.FC, rp.filt.ex$AD.CT.FC)
 ```
 Both two-sample K-S tests reveal no significant difference between the 0.60 $II$ cutoff between internal and external RPs. This minimal association is more easily interpreted when plotted:
 <p align="center">
-```{r echo=FALSE, warning = FALSE, error = FALSE, message=FALSE,  fig.align = 'center'}
+```{r echo=FALSE, warning = FALSE, error = FALSE, message=FALSE,  fig.align = 'center', fig.width = 8}
 title = ggdraw() +
   draw_label(
     "Figure 3: RP Interface Index and tau association in CT and AD brain",
@@ -187,7 +187,7 @@ pn3a = plot_grid(
   labels = c("A", ""),
   nrow = 1,
   ncol = 2,
-  rel_widths = c(2, 0.05)
+  rel_widths = c(1, 0.05)
 )
 
 pn3b = plot_grid(
@@ -195,7 +195,7 @@ pn3b = plot_grid(
   labels = c("B", ""),
   nrow = 1,
   ncol = 2,
-  rel_widths = c(2, 0.05)
+  rel_widths = c(1, 0.05)
 )
 
 pn3c = plot_grid(
@@ -203,7 +203,7 @@ pn3c = plot_grid(
   labels = c("C", ""),
   nrow = 1,
   ncol = 2,
-  rel_widths = c(2, 0.05)
+  rel_widths = c(1, 0.05)
 )
 
 plot_row = plot_grid(
@@ -212,7 +212,7 @@ plot_row = plot_grid(
   nrow = 1,
   ncol = 3,
   
-  rel_widths = c(2, 2, 2))
+  rel_widths = c(3, 3, 3))
 
 plot_grid(
   title, plot_row,
