@@ -1,4 +1,6 @@
 # project
+.RData
+.Rhistory
 _site
 .sass-cache
 .vagrant
