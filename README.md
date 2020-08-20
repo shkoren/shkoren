@@ -1,1 +1,1 @@
-Welcome to Shon Koren's personal site GitHub repo. To view the site, click this link: https://shkoren.github.io/
+Welcome to Shon Koren's personal site GitHub repo. To view the site, click this link: https://shonkoren.github.io/
