@@ -4,7 +4,7 @@
 # if the input file is older than the output file.
 
 # run ./knitpages.R to update all knitr files that need to be updated.
-setwd("D:/GitHub/shon-koren/shkoren.github.io")
+setwd("D:/GitHub/shon-koren/shonkoren.github.io")
 
 
 KnitPost <- function(input, outfile, base.url="/") {
