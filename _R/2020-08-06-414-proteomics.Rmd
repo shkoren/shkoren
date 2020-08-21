@@ -1,16 +1,25 @@
 ---
 title: "Using promiscuous drugs to reveal novel therapeutic targets in tauopathy"
-subtitle: "Coupling broad kinase inhibition with quantitative TMT proteomics"
-
-tags: [tau, proteomics, R]
 gh-repo: shkoren/Comp-bio-projects/Tau-Ribosome Association
-gh-badge: [star, watch, follow]
-
+subtitle: Coupling broad kinase inhibition with quantitative TMT proteomics
+tags:
+- tau
+- proteomics
+- R
 thumbnail-img: /assets/img/kinase.png
+gh-badge:
+- star
+- watch
+- follow
+
+
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=FALSE, cache=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dpi=200, fig.width=6,fig.height = 4)
+knitr::opts_knit$set(root.dir = here::here())
+
+
 ```
 
 This code demonstrates the proteomic analysis used in our recent preprint, "Broad kinase inhibition mitigates early neuronal dysfunction and cognitive deficits in tauopathy" found [here](https://www.biorxiv.org/content/10.1101/2020.07.31.229583v1). Before delving into the code and figures behind the proteomics, I'll provide some background on the study.
@@ -32,3 +41,41 @@ Here, we investigated whether broad kinase inhibition rescues the cognitive and 
 
 
 ## TMT pathway initial steps
+
+```{r echo=FALSE, warning = FALSE, error = FALSE, message=FALSE, fig.align = 'center'}
+#Initializing data and packages
+library(dplyr)
+# library(broom)
+library(tidyverse)
+# library(ComplexHeatmap)
+# library(reshape2)
+library(ggplot2)
+# library(RColorBrewer)
+library(cowplot)
+library(here)
+library(janitor)
+library(qdapRegex)
+
+#knitr::opts_knit$set(root.dir = here::here())
+
+options(scipen = 999) #Turn off sci-notation
+
+rawDataFile = 'TMT_raw.txt'
+rawData = read.delim(here("data", rawDataFile), fileEncoding="UTF-8-BOM")
+rawDataClean = rawData %>% clean_names() %>% filter(master == 'IsMasterProtein') %>% filter(x_unique_peptides > 0) %>% select(c(6:7, 44:64, 194:215)) %>% na.omit() %>%  mutate(Symbol = unlist(rm_between(description, "GN=", " PE", extract=TRUE))) %>% select(Symbol, everything()) %>% rename(., Uniprot = accession)
+
+test = rawData %>% select(194:215)
+
+protMatNorm = rawDataClean %>% select(c(1:3, 4:23)) %>% gather(Sample, NormalizedAbundance, 4:23) %>% mutate(Batch = substr(Sample, 18, 18)) %>%
+  mutate(Tag = unlist(rm_between(Sample, c("ratio_f1_","ratio_f2_"), c("_f1_131","_f2_131"), extract=TRUE))) 
+protMat = rawDataClean %>% select(c(1:3, 25:46)) %>% gather(Sample, Abundance, 4:25) %>% mutate(Batch = substr(Sample, 12, 12)) %>%
+  mutate(Tag = substr(Sample, 14, 17)) %>% mutate(Tag = case_when(Tag == "126_" ~ "126", TRUE ~ as.character(Tag)))
+
+p2 = ggplot(data = protMatNorm, aes(x = toupper(Tag), y = NormalizedAbundance, fill = Batch)) + geom_boxplot() + 
+  theme(axis.text.x = element_text(face = "bold", angle = 45, hjust = 1)) + xlab("TMT Tag") + ylab("Standard (131C) Normalized Intensity")
+p1 = ggplot(data = protMat, aes(x = toupper(Tag), y = log2(Abundance), fill = Batch)) + geom_boxplot() + 
+  theme(axis.text.x = element_text(face = "bold", angle = 45, hjust = 1)) + xlab("TMT Tag")
+
+plot_grid(p1, p2, ncol = 2, labels = "AUTO")
+
+```
