@@ -1,6 +1,6 @@
 ---
 title: "Using promiscuous drugs to reveal novel therapeutic targets in tauopathy"
-gh-repo: shkoren/Comp-bio-projects/Tau-Ribosome Association
+gh-repo: shonkoren/Comp-bio-projects/Tau-Ribosome Association
 subtitle: Coupling broad kinase inhibition with quantitative TMT proteomics
 tags:
 - tau
@@ -12,13 +12,11 @@ gh-badge:
 - watch
 - follow
 
-
 ---
 
 ```{r setup, include=FALSE, cache=FALSE}
 knitr::opts_chunk$set(echo = TRUE, dpi=200, fig.width=6,fig.height = 4)
 knitr::opts_knit$set(root.dir = here::here())
-
 
 ```
 
@@ -34,15 +32,18 @@ This code demonstrates the proteomic analysis used in our recent preprint, "Broa
 
 Tauopathies are a group of over 20 neurodegenerative diseases involving progressive brain atrophy, cognitive dysfunction, and accumulation of pathological tau protein with no disease modifying treatments available. This lack of therapeutic strategies is partly due to poor understanding of the molecular mechanisms underlying these complex disease features. Dysregulated kinase activity has consistently been shown to be an early hallmark of tauopathies. Aberrant kinase signaling directly causes maladaptive signaling cascades which disrupt vital cellular processes and induce tau hyper-phosphorylation and subsequent toxicity.
 
-Here, we investigated whether broad kinase inhibition rescues the cognitive and molecular outcomes of tauopathy by using a mouse model of the primary tauopathy, frontotemporal dementia (FTD). Treatment with GSK2606414 (414) ameliorated brain atrophy, cognitive and behavioral pheonotypes, and measures of neuronal calcium function. As 414 targets over 20 kinases at IC50 < 4 μM and nearly 75 at <10 μM, we evaluated the hippocampal proteomic signatures of drug treatment in tau transgenic mice to reveal:
+Here, we investigated whether broad kinase inhibition rescues the cognitive and molecular outcomes of a mouse model of tauopathy. Treatment with GSK2606414 (414) ameliorated brain atrophy, cognitive and behavioral pheonotypes, and measures of neuronal calcium function. As 414 targets over 20 kinases at IC50 < 4 μM and nearly 75 at <10 μM, we evaluated the hippocampal proteomic signatures of drug treatment in tau transgenic mice to reveal:
 1. The altered hippocampal proteome in FTD model mice relative to control, non-transgenic mice,
 2. The effects of broad kinase inhibition associated with cognitive rescue, and
 3. High confidence candidate targets for therapeutic intervention in human tauopathy
 
 
-## TMT pathway initial steps
+## TMT analysis initialization
 
-```{r echo=FALSE, warning = FALSE, error = FALSE, message=FALSE, fig.align = 'center'}
+TMT isobaric tagging enables multiplexing of LC-MS/MS runs, enhancing proteomic depth and reducing missing values. Here, we used an 11plex system to investigate the hippocampal proteome of early stage tau transgenic mice treated with and without a broad kinase inhibitor. We included in the analysis one sample per run of late stage tau transgenic mice treated with and without the same drug along with a batch standard. A summary of the tags are below:
+
+```{r echo=FALSE, warning = FALSE, error = FALSE, message=FALSE, fig.align = 'center', layout="l-body-outset"}
+
 #Initializing data and packages
 library(dplyr)
 # library(broom)
@@ -55,6 +56,11 @@ library(cowplot)
 library(here)
 library(janitor)
 library(qdapRegex)
+library(knitr)
+library(kableExtra)
+library(ggfortify)
+library(PCAtools)
+
 
 #knitr::opts_knit$set(root.dir = here::here())
 
@@ -62,20 +68,91 @@ options(scipen = 999) #Turn off sci-notation
 
 rawDataFile = 'TMT_raw.txt'
 rawData = read.delim(here("data", rawDataFile), fileEncoding="UTF-8-BOM")
-rawDataClean = rawData %>% clean_names() %>% filter(master == 'IsMasterProtein') %>% filter(x_unique_peptides > 0) %>% select(c(6:7, 44:64, 194:215)) %>% na.omit() %>%  mutate(Symbol = unlist(rm_between(description, "GN=", " PE", extract=TRUE))) %>% select(Symbol, everything()) %>% rename(., Uniprot = accession)
-
-test = rawData %>% select(194:215)
+rawDataClean = rawData %>% clean_names() %>% filter(master == 'IsMasterProtein') %>% filter(x_unique_peptides > 0) %>% select(c(6:7, 44:63, 194:215)) %>% na.omit() %>%  mutate(Symbol = unlist(rm_between(description, "GN=", " PE", extract=TRUE))) %>% select(Symbol, everything()) %>% rename(., Uniprot = accession)
 
 protMatNorm = rawDataClean %>% select(c(1:3, 4:23)) %>% gather(Sample, NormalizedAbundance, 4:23) %>% mutate(Batch = substr(Sample, 18, 18)) %>%
   mutate(Tag = unlist(rm_between(Sample, c("ratio_f1_","ratio_f2_"), c("_f1_131","_f2_131"), extract=TRUE))) 
-protMat = rawDataClean %>% select(c(1:3, 25:46)) %>% gather(Sample, Abundance, 4:25) %>% mutate(Batch = substr(Sample, 12, 12)) %>%
+protMat = rawDataClean %>% select(c(1:3, 24:45)) %>% gather(Sample, Abundance, 4:25) %>% mutate(Batch = substr(Sample, 12, 12)) %>%
   mutate(Tag = substr(Sample, 14, 17)) %>% mutate(Tag = case_when(Tag == "126_" ~ "126", TRUE ~ as.character(Tag)))
 
-p2 = ggplot(data = protMatNorm, aes(x = toupper(Tag), y = NormalizedAbundance, fill = Batch)) + geom_boxplot() + 
-  theme(axis.text.x = element_text(face = "bold", angle = 45, hjust = 1)) + xlab("TMT Tag") + ylab("Standard (131C) Normalized Intensity")
-p1 = ggplot(data = protMat, aes(x = toupper(Tag), y = log2(Abundance), fill = Batch)) + geom_boxplot() + 
-  theme(axis.text.x = element_text(face = "bold", angle = 45, hjust = 1)) + xlab("TMT Tag")
+tagList = protMat %>% distinct(Tag, .keep_all = TRUE) %>%  pull(Tag)
+tagDF = data.frame("Tag" = toupper(tagList), "Batch_1" = c("8mo 414", "8mo Veh", "NTg 414", "NTg 414", "NTg Veh", "NTg Veh", "Tg 414", "Tg 414", "Tg Veh", "Tg Veh", "Standard"), "Batch_2" = c("8mo 414", "8mo Veh", "NTg 414", "NTg 414", "NTg Veh", "NTg Veh", "Tg 414", "Tg 414", "Tg Veh", "Tg Veh", "Standard"))
 
-plot_grid(p1, p2, ncol = 2, labels = "AUTO")
+kable(tagDF) %>% kable_styling(bootstrap_options = "striped", full_width = FALSE, position="center")
+```
+
+Loading the individual batch/tag samples reveals a considerable batch effect in Batch 2 (**Fig. 1A**). After normalizing based on 131C internal batch standard, we see reduced intensity variation (**Fig. 1B**).
+
+```{r echo=FALSE, warning = FALSE, error = FALSE, message=FALSE, fig.align = 'center', layout="l-body-outset"}
+p1b = ggplot(data = protMatNorm, aes(x = toupper(Tag), y = log2(NormalizedAbundance), fill = Batch)) + geom_boxplot(outlier.size = 0.2) + 
+  theme(axis.text.x = element_text(face = "bold", angle = 45, hjust = 1)) + xlab("TMT Tag") + ylab("Normalized Intensity (log2)")
+p1a = ggplot(data = protMat, aes(x = toupper(Tag), y = log2(Abundance), fill = Batch)) + geom_boxplot(outlier.size = 0.2) +
+  theme(axis.text.x = element_text(face = "bold", angle = 45, hjust = 1)) + xlab("TMT Tag") + ylab("Intensity (log2)")
+
+plot_grid(p1a, p1b, ncol = 2, labels = "AUTO")
+
+```
+
+We can then assign group IDs to each tag and complete principal component (PC) analysis on the batch-normalized data. First, we can generate a Scree plot where each principal component is plotted in decreasing order of eigenvalue variance. As expected, if a scree plot is generated before batch correction, one single PC corresponds to the majority of variance (**Fig. 2A**). After batch-correction by normalizing tag intensities to the respective 131C standard, much of the variance disappears and the proportion of variance explained by each PC decreases (**Fig. 2B**). After normalization, 80% of variance in the dataset is explained by 5 PCs, suggesting no factor is largely biasing the results. A plot of the top two components reveals low intra-group variance and no outliers (**Fig. 2C**), prompting more concrete comparative statistics. 
+
+*Note: pcaTools, the packaged used to generate these plots has limited graphical customization which prevented me keeping all text consistent and having legends.*
+
+```{r echo=FALSE, cache=FALSE, warning = FALSE, error = FALSE, message=FALSE, fig.align = 'center'}
+
+metadata = data.frame("Sample" = colnames(rawDataClean)[24:45])
+metadata = metadata %>% mutate(Full = substr(Sample, 11, 12),
+                 Tag = toupper(substr(Sample, 14,17))) 
+metadata$Tag = gsub("126_", "126", metadata$Tag)
+metadata = metadata %>% mutate(Group = case_when(
+  Tag == '126' ~ "8mo 414",
+  Tag == '127N' ~ "8mo Veh",
+  Tag == '127C' ~ "NTg 414",
+  Tag == '128N' ~ "NTg 414",
+  Tag == '128C' ~ "NTg Veh",
+  Tag == '129N' ~ "NTg Veh",
+  Tag == '129C' ~ "Tg 414",
+  Tag == '130N' ~ "Tg 414",
+  Tag == '130C' ~ "Tg Veh",
+  Tag == '131N' ~ "Tg Veh",
+  Tag == '131C' ~ "Standard"
+)) %>% mutate(Batch = case_when(
+  grepl("f1", Full) ~ "Batch 1",
+  grepl("f2", Full) ~ "Batch 2"))
+metadata = column_to_rownames(metadata, "Sample")
+  
+pca.plot = pca(rawDataClean[24:45], metadata = metadata)
+p2a = screeplot(pca.plot, components = getComponents(pca.plot, 1:10), title = NULL, axisLabSize = 6, hline= 80, gridlines.major = FALSE, sizeCumulativeSumLine = .5, sizeCumulativeSumPoints = 1)
+# p2b = biplot(pca.plot, lab = NULL, colby = "Group", colkey = c("8mo Veh"="purple", "8mo 414" = "green", "NTg Veh"="black", "NTg 414"="grey50", "Tg Veh"="red", "Tg 414"="blue", "Standard"="pink"), shape = 'Batch', title = NULL, shapekey = c("Batch 1" = 15, "Batch 2" = 17), axisLabSize = 10, drawConnectors = FALSE)
+# p2b = biplot(pca.plot, lab = NULL, colby = "Batch", shape = 'Batch', title = NULL, shapekey = c("Batch 1" = 15, "Batch 2" = 17), axisLabSize = 10, drawConnectors = FALSE)
+
+
+metadata_post = data.frame("Sample" = colnames(rawDataClean)[4:23])
+metadata_post = metadata_post %>% mutate(Full = substr(Sample, 17, 23),
+                 Tag = toupper(substr(Sample, 20,23))) 
+metadata_post$Tag = gsub("126_", "126", metadata_post$Tag)
+metadata_post = metadata_post %>% mutate(Group = case_when(
+  Tag == '126' ~ "8mo 414",
+  Tag == '127N' ~ "8mo Veh",
+  Tag == '127C' ~ "NTg 414",
+  Tag == '128N' ~ "NTg 414",
+  Tag == '128C' ~ "NTg Veh",
+  Tag == '129N' ~ "NTg Veh",
+  Tag == '129C' ~ "Tg 414",
+  Tag == '130N' ~ "Tg 414",
+  Tag == '130C' ~ "Tg Veh",
+  Tag == '131N' ~ "Tg Veh",
+  Tag == '131C' ~ "Standard"
+)) %>% mutate(Batch = case_when(
+  grepl("f1", Full) ~ "Batch 1",
+  grepl("f2", Full) ~ "Batch 2"))
+metadata_post = column_to_rownames(metadata_post, "Sample")
+  
+pca.plot_post = pca(rawDataClean[4:23], metadata = metadata_post)
+p2b = screeplot(pca.plot_post, components = getComponents(pca.plot_post, 1:10), axisLabSize = 6, hline= 80, gridlines.major = FALSE, title = NULL, sizeCumulativeSumLine = .5, sizeCumulativeSumPoints = 1)
+p2c = biplot(pca.plot_post, lab = NULL, colby = "Group", colkey = c("8mo Veh"="purple", "8mo 414" = "green", "NTg Veh"="black", "NTg 414"="grey50", "Tg Veh"="red", "Tg 414"="blue"), shape = 'Batch', title = NULL, shapekey = c("Batch 1" = 15, "Batch 2" = 17), axisLabSize = 10, drawConnectors = FALSE)
+
+
+plot_grid(p2a, p2b, p2c, labels = c('AUTO'), ncol = 3, rel_widths = c(.7,.7, 1))
+
 
 ```
