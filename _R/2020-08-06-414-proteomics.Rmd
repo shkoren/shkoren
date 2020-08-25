@@ -65,9 +65,6 @@ library(ComplexHeatmap)
 
 options(scipen = 999) #Turn off sci-notation
 
-# TMT_data = "TMTdata.csv"
-# f = read.delim(here("data", TMT_data), fileEncoding="UTF-8-BOM")
-
 rawDataFile = 'TMT_raw.txt'
 rawData = read.delim(here("data", rawDataFile), fileEncoding="UTF-8-BOM")
 rawDataClean = rawData %>% clean_names() %>% filter(master == 'IsMasterProtein') %>% filter(x_unique_peptides > 0) %>% select(c(6:7, 44:63, 194:215)) %>% na.omit() %>%  mutate(Symbol2 = unlist(rm_between(description, "GN=", " PE", extract=TRUE))) %>% rename(., Uniprot = accession) %>% mutate(Symbol3 = str_sub(description, gregexpr('GN=', description))) %>% mutate(Symbol = coalesce(Symbol2, Symbol3)) %>% select(Symbol, everything()) %>% select(-c(Symbol2, Symbol3))
@@ -162,7 +159,7 @@ plot_grid(p2a, p2b, p2c, labels = c('AUTO'), ncol = 3, rel_widths = c(.7,.7, 1))
 
 ## Comparative Statistics
 
-Following initial normalization and decriptive statistical analysis, comparative statistical analysis can significantly altered proteins between our experimental groups.
+Following initial decriptive statistics, comparative statistical analysis can reveal significantly altered proteins between groups. First, a traditional heatmap of proteins significantly altered in at least one comparison reveals a significant Tg effect in the data (**Fig. 3A**).
 
 ```{r echo=FALSE, cache=FALSE, warning = FALSE, error = FALSE, message=FALSE, fig.align = 'center'}
 
@@ -243,55 +240,42 @@ ht_all_noanno = suppressWarnings((Heatmap(as.matrix(z_testdiff2), heatmap_width 
 ht_all_noanno_draw = draw(ht_all_noanno, heatmap_legend_side = "bottom")
 ```
 
-test num22
+Next, volcano plots detail individual group comparisons between:
 
-```{r echo=FALSE, cache=FALSE, warning = FALSE, error = FALSE, message=FALSE, fig.align = 'center', fig.dim=c(5,6)}
+1. NTg vehicle treated vs. NTg drug treated mice (Drug effect, **Fig. 4A**)
+2. Tg vehicle treated mice vs. NTg vehicle treated mice (Tg effect, **Fig. 4B**), and
+3. Tg drug treated mice vs. NTg vehicle treated mice (Tg + Drug effect, **Fig. 4C**)
 
-# Volcano plot
-library(EnhancedVolcano)
-p3a = EnhancedVolcano(stats,
-    lab = stats$Symbol,
-    y = 'NVND.adj',
-    x = 'NVNDlog',
-    title = 'NTg 414',
-    ylim = c(0, 4),
-    xlim =c(-2, 1),
-    FCcutoff = 0,
-    pCutoff = 0.05,
-    legendPosition = 'none',
-    subtitle = NULL,
-    pointSize = 2.0,
-    caption=NULL,
-    labSize = 3)
-p3b = EnhancedVolcano(stats,
-    lab = stats$Symbol,
-    y = 'NVTV.adj',
-    x = 'NVTVlog',
-    title = 'Tg Veh',
-    ylim = c(0, 3),
-    xlim = c(-2, 2.1),
-    caption = NULL,
-    FCcutoff = 0,
-    pCutoff = 0.05,
-    pointSize = 2.0,
-    legendPosition = 'none',
-    subtitle = NULL,
-    labSize = 3)
-p3c = EnhancedVolcano(stats,
-    lab = stats$Symbol,
-    y = 'NVTD.adj',
-    x = 'NVTDlog',
-    title = 'Tg 414',
-    ylim = c(0, 3),
-    xlim = c(-2, 2.1),
-    FCcutoff = 0,
-    pCutoff = 0.05,
-    pointSize = 2.0,
-    subtitle = NULL,
-    legendPosition = 'none',
-    caption = NULL,
-    labSize = 3)
+As expected, the effect of 414 in nondiseased, NTg mice is considerably smaller than the effect of the tauopathy transgene. A considerable portion of the proteome remains altered in the Tg + 414 proteome compared to just the Tg effect, despite rescued cognitive function. We can evaluate the true effect of broad kinase inhibition via 414 treatment by identifying proteins significantly altered in Tg mice that return toward NTg levels in Tg + 414 treated mice (**Fig. 4D**).
 
-plot_grid(NULL, p3a, p3b, p3c, labels = 'AUTO')
+```{r echo=FALSE, cache=FALSE, warning = FALSE, error = FALSE, message=FALSE, fig.align = 'center'}
+p4a = ggplot(stats, aes(x = NVNDlog, y = -log10(NVND.adj))) + geom_point(alpha = 0.4, aes(color = NVND.adj < 0.05))+ scale_color_manual(name = 'NVND.adj < 0.05', values=setNames(c('red', 'grey'), c(T, F))) + theme(legend.position = "none") + xlim(c(-2,2)) + ylim(c(0, 5)) + ggtitle("Drug Effect") + 
+  xlab("NTg 414 vs. NTg Veh\nFold Change log2") + ylab("-log10(adj.pval)") + geom_hline(yintercept = -log10(0.05), col = "red", linetype = "dotted", size = 1) +
+  geom_vline(xintercept = 0, col = "red", linetype = "dotted", size = 1)
+
+p4b = ggplot(stats, aes(x = NVTVlog, y = -log10(NVTV.adj))) + geom_point(alpha = 0.4, aes(color = NVTV.adj < 0.05))+ scale_color_manual(name = 'NVTV.adj < 0.05', values=setNames(c('red', 'grey'), c(T, F))) + theme(legend.position = "none") + xlim(c(-2,2)) + ylim(c(0, 5)) + ggtitle("Tg Effect") +
+  xlab("Tg Veh vs. NTg Veh\nFold Change log2") + ylab("-log10(adj.pval)") + geom_hline(yintercept = -log10(0.05), col = "red", linetype = "dotted", size = 1) +
+  geom_vline(xintercept = 0, col = "red", linetype = "dotted", size = 1)
+
+p4c = ggplot(stats, aes(x = NVTDlog, y = -log10(NVTD.adj))) + geom_point(alpha = 0.4, aes(color = (NVTD.adj < 0.05))) + scale_color_manual(name = '', values=setNames(c('red', 'grey'), c(T, F))) + theme(legend.position = "none") + xlim(c(-2,2)) + ylim(c(0, 5)) + ggtitle("Tg + Drug Effect") +
+  xlab("Tg 414 vs. NTg Veh\nFold Change log2") + ylab("-log10(adj.pval)") + geom_hline(yintercept = -log10(0.05), col = "red", linetype = "dotted", size = 1) +
+  geom_vline(xintercept = 0, col = "red", linetype = "dotted", size = 1)
+
+p4cl = get_legend(ggplot(stats, aes(x = NVTDlog, y = -log10(NVTD.adj))) + geom_point(aes(color = NVTD.adj < 0.05)) +
+                   scale_color_manual(name = 'Significantly Altered', values=setNames(c('red', 'grey'), c(T, F))) + theme(legend.position = "bottom"))
+
+row4 = plot_grid(p4a, p4b, p4c, ncol = 3, labels = 'AUTO', vjust = .5)
+plot_leg = plot_grid(NULL, row4, p4cl, ncol = 1, rel_heights = c(.1, 1.2, .2))
+
+p4d = ggplot(stats, aes(x = NVTDlog, y = -log10(NVTD.adj))) + geom_point(alpha = 0.5, aes(color = (NVTD.adj > 0.05 & NVTV.adj < 0.05))) + 
+  scale_color_manual(name = 'Drug Rescued', values=setNames(c('red', 'grey'), c(T, F))) + 
+  theme(legend.position = "right", plot.title = element_text(size=14)) + xlim(c(-2,2)) + ylim(c(0, 5)) +
+  ggtitle("Rescued by Drug in Tg", ) +
+  xlab("Tg 414 vs. NTg Veh\nFold Change log2") + ylab("-log10(adj.pvalue)") + 
+  geom_hline(yintercept = -log10(0.05), col = "red", linetype = "dotted", size = 1) +
+  geom_vline(xintercept = 0, col = "red", linetype = "dotted", size = 1)
+
+plot_grid(plot_leg, NULL, p4d, ncol = 1, nrow = 3, labels = c('', '', 'D'), vjust = .5, rel_heights=c(1.2, .05, 1.1))
 
 ```
+
