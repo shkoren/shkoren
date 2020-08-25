@@ -18,6 +18,7 @@ gh-badge:
 knitr::opts_chunk$set(echo = TRUE, dpi=200, fig.width=6,fig.height = 4)
 knitr::opts_knit$set(root.dir = here::here())
 
+
 ```
 
 This code demonstrates the proteomic analysis used in our recent preprint, "Broad kinase inhibition mitigates early neuronal dysfunction and cognitive deficits in tauopathy" found [here](https://www.biorxiv.org/content/10.1101/2020.07.31.229583v1). Before delving into the code and figures behind the proteomics, I'll provide some background on the study.
@@ -60,15 +61,18 @@ library(knitr)
 library(kableExtra)
 library(ggfortify)
 library(PCAtools)
-
-
-#knitr::opts_knit$set(root.dir = here::here())
+library(ComplexHeatmap)
 
 options(scipen = 999) #Turn off sci-notation
 
+# TMT_data = "TMTdata.csv"
+# f = read.delim(here("data", TMT_data), fileEncoding="UTF-8-BOM")
+
 rawDataFile = 'TMT_raw.txt'
 rawData = read.delim(here("data", rawDataFile), fileEncoding="UTF-8-BOM")
-rawDataClean = rawData %>% clean_names() %>% filter(master == 'IsMasterProtein') %>% filter(x_unique_peptides > 0) %>% select(c(6:7, 44:63, 194:215)) %>% na.omit() %>%  mutate(Symbol = unlist(rm_between(description, "GN=", " PE", extract=TRUE))) %>% select(Symbol, everything()) %>% rename(., Uniprot = accession)
+rawDataClean = rawData %>% clean_names() %>% filter(master == 'IsMasterProtein') %>% filter(x_unique_peptides > 0) %>% select(c(6:7, 44:63, 194:215)) %>% na.omit() %>%  mutate(Symbol2 = unlist(rm_between(description, "GN=", " PE", extract=TRUE))) %>% rename(., Uniprot = accession) %>% mutate(Symbol3 = str_sub(description, gregexpr('GN=', description))) %>% mutate(Symbol = coalesce(Symbol2, Symbol3)) %>% select(Symbol, everything()) %>% select(-c(Symbol2, Symbol3))
+rawDataClean$Symbol[which(rawDataClean$Symbol == 1)] = 'Q8C3W1'
+rawDataClean$Symbol[which(rawDataClean$Symbol == 3)] = 'MAPTp301L'
 
 protMatNorm = rawDataClean %>% select(c(1:3, 4:23)) %>% gather(Sample, NormalizedAbundance, 4:23) %>% mutate(Batch = substr(Sample, 18, 18)) %>%
   mutate(Tag = unlist(rm_between(Sample, c("ratio_f1_","ratio_f2_"), c("_f1_131","_f2_131"), extract=TRUE))) 
@@ -93,9 +97,7 @@ plot_grid(p1a, p1b, ncol = 2, labels = "AUTO")
 
 ```
 
-We can then assign group IDs to each tag and complete principal component (PC) analysis on the batch-normalized data. First, we can generate a Scree plot where each principal component is plotted in decreasing order of eigenvalue variance. As expected, if a scree plot is generated before batch correction, one single PC corresponds to the majority of variance (**Fig. 2A**). After batch-correction by normalizing tag intensities to the respective 131C standard, much of the variance disappears and the proportion of variance explained by each PC decreases (**Fig. 2B**). After normalization, 80% of variance in the dataset is explained by 5 PCs, suggesting no factor is largely biasing the results. A plot of the top two components reveals low intra-group variance and no outliers (**Fig. 2C**), prompting more concrete comparative statistics. 
-
-*Note: pcaTools, the packaged used to generate these plots has limited graphical customization which prevented me keeping all text consistent and having legends.*
+We can then assign group IDs to each tag and complete principal component (PC) analysis on the batch-normalized data. First, we can generate a Scree plot where each principal component is plotted in decreasing order of eigenvalue variance. As expected, if a scree plot is generated before batch correction, one single PC corresponds to the majority of variance (**Fig. 2A**). After batch-correction by normalizing tag intensities to the respective 131C standard, much of the variance disappears and the proportion of variance explained by each PC decreases (**Fig. 2B**). After normalization, 80% of variance in the dataset is explained by 5 PCs, suggesting no factor is largely biasing the results. A plot of the top two components reveals low intra-group variance and no outliers (**Fig. 2C**), prompting comparative statistics. 
 
 ```{r echo=FALSE, cache=FALSE, warning = FALSE, error = FALSE, message=FALSE, fig.align = 'center'}
 
@@ -154,5 +156,142 @@ p2c = biplot(pca.plot_post, lab = NULL, colby = "Group", colkey = c("8mo Veh"="p
 
 plot_grid(p2a, p2b, p2c, labels = c('AUTO'), ncol = 3, rel_widths = c(.7,.7, 1))
 
+
+```
+
+
+## Comparative Statistics
+
+Following initial normalization and decriptive statistical analysis, comparative statistical analysis can significantly altered proteins between our experimental groups.
+
+```{r echo=FALSE, cache=FALSE, warning = FALSE, error = FALSE, message=FALSE, fig.align = 'center'}
+
+#Load and clean murine TMT data
+TMT_data = "TMTdata.csv"
+f = read.csv(here("data", TMT_data), as.is=TRUE, header=TRUE, sep=',', fileEncoding="UTF-8-BOM")
+# f <- read.csv(TMT_data,as.is=TRUE,header=TRUE,sep=',',check.names=FALSE)
+f = f %>% mutate_if(is.character, str_trim)
+colnames(f)[1] <- "Uniprot ID"
+colnames(f)[2] <-"Gene_name"
+colnames(f)[3] <-"Symbol"
+fm <- data.frame(f)
+fm2 <- fm[-(2)]
+fm2 = fm2 %>% mutate_if(is.character, str_trim)
+
+# Plot individual animals and mean
+# boxplot(f[,4:ncol(f)], xlab='', ylab= "protein level")
+# abline(h=median(colMeans(as.matrix(fm[,4:ncol(fm)]))), col='red')
+
+# Wide -> long, clean up group IDs by removing digits, necessitating renaming 414 variable to drug
+long_fmt <- melt(fm2, variable.name = "ID")
+long_fmt$group <- gsub("\\d", "", long_fmt$ID)
+
+# Group-wise t-tests and FDR adjust
+stats = long_fmt %>% 
+  group_by(Uniprot.ID, Symbol, group) %>% 
+  summarise(value = list(value)) %>% 
+  spread(group, value) %>% 
+  mutate(NVNDpval = t.test(unlist(NV), unlist(ND))$p.value,
+         NVTVpval = t.test(unlist(NV), unlist(TV))$p.value,
+         NVTDpval = t.test(unlist(NV), unlist(TD))$p.value,
+         TVTDpval = t.test(unlist(TV), unlist(TD))$p.value) %>%
+  mutate(NVmean = mean(unlist(NV))) %>%
+  mutate(NDmean = mean(unlist(ND))) %>%
+  mutate(TVmean = mean(unlist(TV))) %>%
+  mutate(TDmean = mean(unlist(TD))) %>%
+  mutate(NDNVdiff = NDmean / NVmean) %>%
+  mutate(TVNVdiff = TVmean / NVmean) %>%
+  mutate(TDNVdiff = TDmean / NVmean) %>%
+  mutate(TDTVdiff = TVmean / TDmean) %>%
+  mutate(NDNVdir = dplyr::case_when(NDNVdiff > 1 ~ 'up',
+                                    NDNVdiff < 1 ~ 'down')) %>%
+  mutate(TVNVdir = dplyr::case_when(TVNVdiff > 1 ~ 'up',
+                                    TVNVdiff < 1 ~ 'down')) %>%
+  mutate(TDNVdir = dplyr::case_when(TDNVdiff > 1 ~ 'up',
+                                    TDNVdiff < 1 ~ 'down')) %>%
+  mutate(TDTVdir = dplyr::case_when(TDTVdiff > 1 ~ 'up',
+                                    TDTVdiff < 1 ~ 'down')) %>%
+  ungroup() %>%
+  mutate(NVND.adj = p.adjust(NVNDpval, method = 'fdr'),
+         NVTV.adj = p.adjust(NVTVpval, method = 'fdr'),
+         NVTD.adj = p.adjust(NVTDpval, method = 'fdr'),
+         TVTD.adj = p.adjust(TVTDpval, method = 'fdr')) %>%
+  mutate(Tdrescue = dplyr::case_when(NVTV.adj < 0.05 & NVTD.adj > 0.05 ~ "resc", TRUE ~ "nr")) %>%
+  select(-c(NVNDpval, NVTVpval, NVTDpval, TVTDpval, ND, NV, TD, TV)) %>%
+  mutate(NVNDlog = log2(NDNVdiff),
+         NVTVlog = log2(TVNVdiff),
+         NVTDlog = log2(TDNVdiff))
+
+# Create DEP matrix
+testdiff = stats %>% dplyr::filter(NVND.adj < 0.05 | NVTV.adj < 0.05 | NVTD.adj < 0.05)
+testdiff.stat.filt = testdiff %>% dplyr::filter(NVND.adj > 0.05 & NVTV.adj < 0.05)
+
+# Create DEP matrix for human comparisons, filtering out any drug effects
+f.TMT = testdiff %>% dplyr::filter(NVND.adj > 0.05 & NVTV.adj < 0.05)
+
+# Clean and scale DEP matrix for heatmapping
+testdiff2 = fm2 %>% dplyr::filter(as.character(Uniprot.ID) %in% as.character(testdiff$Uniprot.ID)) %>% column_to_rownames('Uniprot.ID') %>% dplyr::select(c(-"Symbol")) 
+testdiff2_symb = fm2 %>% dplyr::filter(as.character(Uniprot.ID) %in% as.character(testdiff$Uniprot.ID)) %>% column_to_rownames('Uniprot.ID') 
+z_testdiff2 = data.frame(t(scale(t(testdiff2))))
+
+# Heatmap of all DEP in mouse TMT for Fig. 4B
+ht_all_noanno = suppressWarnings((Heatmap(as.matrix(z_testdiff2), heatmap_width = unit(8, "cm"), name = "Protein Expression\n    (Z-score)", show_row_names = FALSE, column_names_side = "top",
+                                          column_order = order(as.numeric(gsub("column", "", colnames(z_testdiff2)))), 
+                                          heatmap_legend_param = list(title_position = "topcenter", legend_width=unit(5,"cm"), legend_direction = "horizontal", 
+                                                                      title_gp = gpar(fontsize = 7, fontface = "bold")))))
+
+ht_all_noanno_draw = draw(ht_all_noanno, heatmap_legend_side = "bottom")
+```
+
+test num22
+
+```{r echo=FALSE, cache=FALSE, warning = FALSE, error = FALSE, message=FALSE, fig.align = 'center', fig.dim=c(5,6)}
+
+# Volcano plot
+library(EnhancedVolcano)
+p3a = EnhancedVolcano(stats,
+    lab = stats$Symbol,
+    y = 'NVND.adj',
+    x = 'NVNDlog',
+    title = 'NTg 414',
+    ylim = c(0, 4),
+    xlim =c(-2, 1),
+    FCcutoff = 0,
+    pCutoff = 0.05,
+    legendPosition = 'none',
+    subtitle = NULL,
+    pointSize = 2.0,
+    caption=NULL,
+    labSize = 3)
+p3b = EnhancedVolcano(stats,
+    lab = stats$Symbol,
+    y = 'NVTV.adj',
+    x = 'NVTVlog',
+    title = 'Tg Veh',
+    ylim = c(0, 3),
+    xlim = c(-2, 2.1),
+    caption = NULL,
+    FCcutoff = 0,
+    pCutoff = 0.05,
+    pointSize = 2.0,
+    legendPosition = 'none',
+    subtitle = NULL,
+    labSize = 3)
+p3c = EnhancedVolcano(stats,
+    lab = stats$Symbol,
+    y = 'NVTD.adj',
+    x = 'NVTDlog',
+    title = 'Tg 414',
+    ylim = c(0, 3),
+    xlim = c(-2, 2.1),
+    FCcutoff = 0,
+    pCutoff = 0.05,
+    pointSize = 2.0,
+    subtitle = NULL,
+    legendPosition = 'none',
+    caption = NULL,
+    labSize = 3)
+
+plot_grid(NULL, p3a, p3b, p3c, labels = 'AUTO')
 
 ```
